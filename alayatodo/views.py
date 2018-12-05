@@ -7,7 +7,6 @@ from flask import (
     request,
     session,
     url_for, flash)
-import json
 
 @app.route('/')
 def home():
@@ -58,6 +57,14 @@ def todo_json(id):
     todo = [dict((cur.description[i][0], value) for i, value in enumerate(todo)) ]
 
     return render_template('todo_json.html', todo=todo)
+
+
+@app.route('/todo/<id>/complete/<completed>', methods=['POST'])
+def todo_complete(id, completed):
+    g.db.execute("UPDATE todos SET completed = %d  WHERE id = '%s' " % (not int(completed),id))
+    g.db.commit()
+
+    return redirect('/todo')
 
 
 @app.route('/todo', methods=['GET'])

@@ -13,5 +13,4 @@ CREATE TABLE todos (
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-ALTER TABLE todos
-  ADD completed bool DEFAULT false;
+ALTER TABLE todos ADD COLUMN completed INTEGER DEFAULT 0;
