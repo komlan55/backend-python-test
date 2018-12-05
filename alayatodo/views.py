@@ -4,8 +4,8 @@ from flask import (
     redirect,
     render_template,
     request,
-    session
-    )
+    session,
+    url_for, flash)
 
 
 @app.route('/')
@@ -63,8 +63,13 @@ def todos():
 @app.route('/todo', methods=['POST'])
 @app.route('/todo/', methods=['POST'])
 def todos_POST():
+    error=[]
     if not session.get('logged_in'):
         return redirect('/login')
+    if not request.form.get('description', ''):
+        flash('Description must not be empty')
+        #flash('You were successfully logged in')
+
     g.db.execute(
         "INSERT INTO todos (user_id, description) VALUES ('%s', '%s')"
         % (session['user']['id'], request.form.get('description', ''))
