@@ -12,3 +12,6 @@ CREATE TABLE todos (
   description VARCHAR(255),
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+ALTER TABLE todos
+  ADD completed bool DEFAULT false;
