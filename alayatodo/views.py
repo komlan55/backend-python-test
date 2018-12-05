@@ -1,4 +1,5 @@
 from alayatodo import app
+
 from flask import (
     g,
     redirect,
@@ -6,7 +7,7 @@ from flask import (
     request,
     session,
     url_for, flash)
-
+import json
 
 @app.route('/')
 def home():
@@ -50,6 +51,15 @@ def todo(id):
     return render_template('todo.html', todo=todo)
 
 
+@app.route('/todo/<id>/json', methods=['GET'])
+def todo_json(id):
+    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
+    todo = cur.fetchone()
+    todo = [dict((cur.description[i][0], value) for i, value in enumerate(todo)) ]
+
+    return render_template('todo_json.html', todo=todo)
+
+
 @app.route('/todo', methods=['GET'])
 @app.route('/todo/', methods=['GET'])
 def todos():
@@ -63,12 +73,10 @@ def todos():
 @app.route('/todo', methods=['POST'])
 @app.route('/todo/', methods=['POST'])
 def todos_POST():
-    error=[]
     if not session.get('logged_in'):
         return redirect('/login')
     if not request.form.get('description', ''):
         flash('Description must not be empty')
-        #flash('You were successfully logged in')
 
     g.db.execute(
         "INSERT INTO todos (user_id, description) VALUES ('%s', '%s')"

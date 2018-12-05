@@ -19,6 +19,12 @@
                         <button type="submit" class="btn btn-xs btn-danger"><span class="glyphicon glyphicon-remove glyphicon-white"></span></button>
                     </form>
                 </td>
+                <td>
+                    <a href="{{ url_for('todo_json', id=todo.id) }}">
+                       JSON
+                    </a>
+
+                </td>
             </tr>
         {% endfor %}
         <tr>
