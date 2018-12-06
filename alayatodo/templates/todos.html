@@ -8,7 +8,7 @@
         <th>User</th>
         <th>Description</th>
         <th>Completed</th>
-        <th></th>
+        <th colspan="2"> Actions </th>
         {% for todo in todos %}
         <tr>
             <td>{{ todo.id }}</td>
@@ -23,16 +23,17 @@
 
                     <button type="submit" class="btn btn-xs btn-info">
                         <span
-                            class="glyphicon {% if todo.completed  %} glyphicon-check {% else %}  glyphicon-unchecked {% endif %} glyphicon-white"></span>
+                                class="glyphicon {% if todo.completed  %} glyphicon-check {% else %}  glyphicon-unchecked {% endif %} glyphicon-white"></span>
                     </button>
 
                 </form>
             </td>
             <td>
-                <form method="post" action="{{ url_for('todo_delete', id=todo.id) }}">
-                    <button type="submit" class="btn btn-xs btn-danger"><span
-                            class="glyphicon glyphicon-remove glyphicon-white"></span></button>
-                </form>
+                <button data-toggle="modal" data-target="#confirmDeleteModal-{{ todo.id }}"
+                         class="btn btn-xs btn-danger">
+                <span  class="glyphicon glyphicon-remove glyphicon-white"></span></button>
+
+
             </td>
             <td>
                 <a href="{{ url_for('todo_json', id=todo.id) }}">
@@ -54,4 +55,35 @@
         </tr>
     </table>
 </div>
+
+{% for todo in todos %}
+
+<!-- Confirm delete modal -->
+<div class="modal fade" id="confirmDeleteModal-{{todo.id}}" tabindex="-1" role="dialog"
+     aria-labelledby="exampleModalLabel"
+     aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Confirm delete</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                Do you wish to delete todo : {{ todo.description }}
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <form method="post" action="{{ url_for('todo_delete', id=todo.id) }}">
+
+                    <button type="submit" class="btn btn-primary">Confirm</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
 {% endblock %}

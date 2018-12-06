@@ -90,6 +90,8 @@ def todos_POST():
         % (session['user']['id'], request.form.get('description', ''))
     )
     g.db.commit()
+    flash('Todo has been successfully added')
+
     return redirect('/todo')
 
 
@@ -99,4 +101,6 @@ def todo_delete(id):
         return redirect('/login')
     g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)
     g.db.commit()
+    flash('Todo has been successfully deleted')
+
     return redirect('/todo')
