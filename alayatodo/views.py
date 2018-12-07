@@ -2,7 +2,7 @@ import json
 
 from alayatodo import app
 from flask_login import current_user, login_user,logout_user,login_required
-from alayatodo.models import User, Todo
+from alayatodo.models import User, Todo, AlchemyEncoder
 from alayatodo import db
 from flask import (
     g,
@@ -33,7 +33,6 @@ def login():
                 return redirect('/login')
             if login_user(user, remember=False):
                 return redirect('/todo')
-
 
     return render_template('login.html')
 
@@ -92,7 +91,8 @@ def todo(id):
 @login_required
 def todo_json(id):
     todo = Todo.query.get(id)
-    return render_template('todo_json.html', todo=todo, json=todo.to_json)
+    text = json.dumps(todo, cls=AlchemyEncoder)
+    return render_template('todo_json.html', todo=todo, json=text)
 
 
 @app.route('/todo/<id>', methods=['POST'])
@@ -104,33 +104,53 @@ def todo_complete(id):
     return redirect('/todo')
 
 
-@app.route('/todo', methods=['GET'])
-@app.route('/todo/', methods=['GET'])
+@app.route('/todo', methods=['GET','POST'])
+@app.route('/todo/', methods=['GET','POST'])
 @login_required
 def todos():
+    ppp = app.config['ITEM_PER_PAGE']
 
-    todos = Todo.query.all()
-    return render_template('todos.html', todos=todos)
+    page = request.args.get('page', 1, type=int)
+    todos = Todo.query.paginate(page,ppp,False)
 
-@app.route('/todo', methods=['POST'])
-@app.route('/todo/', methods=['POST'])
+    next_url = url_for('todos', page=todos.next_num)  if todos.has_next else None
+    prev_url = url_for('todos', page=todos.prev_num)  if todos.has_prev else None
+
+    return render_template('todos.html', todos=todos.items,next_url=next_url, prev_url=prev_url)
+
+@app.route('/explore')
 @login_required
-def todos_POST():
+def explore():
+    ppp = app.config['ITEM_PER_PAGE']
+
+    page = request.args.get('page', 1, type=int)
+    todos = Todo.query.order_by(Todo.id).paginate(page, ppp, False)
+    next_url = url_for('explore', page=todos.next_num) \
+        if todos.has_next else None
+    prev_url = url_for('explore', page=todos.prev_num) \
+        if todos.has_prev else None
+    return render_template("todos.html", title='Explore', todos=todos.items, next_url=next_url, prev_url=prev_url)
+
+
+@app.route('/todo/add', methods=['POST'])
+@login_required
+def todo_add():
     desc = request.form.get('description', '')
+    print("desc={}".format(desc))
 
-    if not desc:
+    if desc is None:
         flash('Description must not be empty')
+    else:
+        user = User.query.filter_by(username=current_user.username).first()
+        todo = Todo(description=desc,user_id=user.id)
+        db.session.add(todo)
+        db.session.commit()
 
-    user = User.query.filter_by(username=current_user.username).first()
-    todo = Todo(description=desc,user_id=user.id)
-    db.session.add(todo)
-    db.session.commit()
-
-    flash('Todo has been successfully added')
+        flash('Todo has been successfully added')
 
     return redirect('/todo')
 
-@app.route('/todo/<id>', methods=['POST'])
+@app.route('/todo/<id>/delete', methods=['POST'])
 @login_required
 def todo_delete(id):
 

@@ -1,7 +1,12 @@
+import json
+
+from sqlalchemy_json import MutableJson
+
 from alayatodo import db
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 from alayatodo import login_manager
+from sqlalchemy.ext.declarative import DeclarativeMeta
 
 
 class User(UserMixin,db.Model):
@@ -24,12 +29,32 @@ class Todo(db.Model):
     completed = db.Column(db.Boolean, default=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
 
+    def __init__(self, description,user_id, completed=False):
+        self.description = description
+        self.completed = completed
+        self.user_id = user_id
+
     def __repr__(self):
         return '<Todo desc={},completed={}>'.format(self.description,self.completed)
 
-    def to_json(self):
-        return "{description:{} ,completed:{} ,user_id:{} }".format(self.id, self.description,self.completed,self.user_id)
 
+
+class AlchemyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj.__class__, DeclarativeMeta):
+            # an SQLAlchemy class
+            fields = {}
+            for field in [x for x in dir(obj) if not x.startswith('_') and x != 'metadata']:
+                data = obj.__getattribute__(field)
+                try:
+                    json.dumps(data) # this will fail on non-encodable values, like other classes
+                    fields[field] = data
+                except TypeError:
+                    fields[field] = None
+            # a json-encodable dict
+            return fields
+
+        return json.JSONEncoder.default(self, obj)
 
 @login_manager.user_loader
 def load_user(id):
