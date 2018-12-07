@@ -22,9 +22,14 @@ Credentials:
 ![Todos](/web/img/todos.png?raw=true "Todos")
 
 ### Requirements
-* python 5.7
-* virtualenv
-* sqlite3
+* Flask
+* Jinja2
+* docopt
+* flask-sqlalchemy
+* flask-migrate
+* flask-login
+* python-dotenv
+* sqlalchemy-json\
 * A github account
 
 ### Installation
@@ -32,10 +37,9 @@ Credentials:
 ```sh
 virtualenv .
 bin/pip install -r requirements.txt
-bin/python main.py initdb
-bin/python main.py
-```
-
+flask db init
+flask db migrate -m "users and todo table"
+flask db upgrade
 ### Instructions
 
 You will be asked to improve the code of this app with the following tasks.
