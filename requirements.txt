@@ -1,3 +1,7 @@
 Flask
 Jinja2
 docopt
+flask-sqlalchemy
+flask-migrate
+flask-login
+python-dotenv

@@ -3,10 +3,8 @@
 {% block content %}
 <div class="col-md-4 col-md-offset-4">
     <h1>Todo(JSON):</h1>
-    <pre>{{ todo }}</pre>
-    <form method="post" action="{{ url_for('todo_delete', id=todo.id) }}">
-        <button type="submit" class="btn btn-xs btn-danger"><span class="glyphicon glyphicon-remove glyphicon-white"></span></button>
-    </form>
+    <pre>{{ json }}</pre>
+
 
 </div>
 

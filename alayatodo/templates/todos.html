@@ -19,7 +19,7 @@
                 </a>
             </td>
             <td>
-                <form method="post" action="{{ url_for('todo_complete', id=todo.id, completed=todo.completed) }}">
+                <form method="post" action="{{ url_for('todo_complete', id=todo.id) }}">
 
                     <button type="submit" class="btn btn-xs btn-info">
                         <span

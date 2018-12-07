@@ -1,5 +1,9 @@
-from alayatodo import app
+import json
 
+from alayatodo import app
+from flask_login import current_user, login_user,logout_user,login_required
+from alayatodo.models import User, Todo
+from alayatodo import db
 from flask import (
     g,
     redirect,
@@ -15,92 +19,125 @@ def home():
         return render_template('index.html', readme=readme)
 
 
-@app.route('/login', methods=['GET'])
+@app.route('/login', methods=['GET','POST'])
 def login():
-    return render_template('login.html')
 
-
-@app.route('/login', methods=['POST'])
-def login_POST():
     username = request.form.get('username')
     password = request.form.get('password')
+    if request.method == 'POST':
 
-    sql = "SELECT * FROM users WHERE username = '%s' AND password = '%s'";
-    cur = g.db.execute(sql % (username, password))
-    user = cur.fetchone()
-    if user:
-        session['user'] = dict(user)
-        session['logged_in'] = True
-        return redirect('/todo')
+        if username is not None and password is not None:
+            user = User.query.filter_by(username=username).first()
+            if user is None or not user.check_password(password):
+                flash('Invalid username or password')
+                return redirect('/login')
+            if login_user(user, remember=False):
+                return redirect('/todo')
 
-    return redirect('/login')
 
+    return render_template('login.html')
+
+@app.route('/register',methods=['GET','POST'])
+def register():
+
+    username = request.form.get('username')
+    password = request.form.get('password')
+    confirm_password = request.form.get('confirm_password')
+
+    if request.method == 'POST':
+        valid = True
+        user = User.query.filter_by(username=username).first()
+        print(user)
+        if username is  None :
+            flash('Please enter a username')
+            valid = False
+        if user is not None:
+            flash('This username is already taken. Please choose another')
+            valid = False
+        if password is None or confirm_password is None:
+            flash('Please enter a password')
+            valid = False
+
+        if password != confirm_password:
+            flash('Password dont match')
+            valid = False
+
+        if valid:
+            user =  User(username=username)
+            user.set_password(password)
+            db.session.add(user)
+            db.session.commit()
+            return redirect('/login')
+        else:
+            return render_template('register.html')
+
+    else:
+        return render_template('register.html')
 
 @app.route('/logout')
+@login_required
 def logout():
-    session.pop('logged_in', None)
-    session.pop('user', None)
+    session.pop("username",None)
+    logout_user()
     return redirect('/')
 
-
 @app.route('/todo/<id>', methods=['GET'])
+@login_required
 def todo(id):
-    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
-    todo = cur.fetchone()
+    todo = Todo.query.get(id)
+
     return render_template('todo.html', todo=todo)
 
-
 @app.route('/todo/<id>/json', methods=['GET'])
+@login_required
 def todo_json(id):
-    cur = g.db.execute("SELECT * FROM todos WHERE id ='%s'" % id)
-    todo = cur.fetchone()
-    todo = [dict((cur.description[i][0], value) for i, value in enumerate(todo)) ]
-
-    return render_template('todo_json.html', todo=todo)
+    todo = Todo.query.get(id)
+    return render_template('todo_json.html', todo=todo, json=todo.to_json)
 
 
-@app.route('/todo/<id>/complete/<completed>', methods=['POST'])
-def todo_complete(id, completed):
-    g.db.execute("UPDATE todos SET completed = %d  WHERE id = '%s' " % (not int(completed),id))
-    g.db.commit()
+@app.route('/todo/<id>', methods=['POST'])
+def todo_complete(id):
+    todo = Todo.query.get(id)
+    todo.completed = not todo.completed
+    db.session.commit()
 
     return redirect('/todo')
 
 
 @app.route('/todo', methods=['GET'])
 @app.route('/todo/', methods=['GET'])
+@login_required
 def todos():
-    if not session.get('logged_in'):
-        return redirect('/login')
-    cur = g.db.execute("SELECT * FROM todos")
-    todos = cur.fetchall()
-    return render_template('todos.html', todos=todos)
 
+    todos = Todo.query.all()
+    return render_template('todos.html', todos=todos)
 
 @app.route('/todo', methods=['POST'])
 @app.route('/todo/', methods=['POST'])
+@login_required
 def todos_POST():
-    if not session.get('logged_in'):
-        return redirect('/login')
-    if not request.form.get('description', ''):
+    desc = request.form.get('description', '')
+
+    if not desc:
         flash('Description must not be empty')
 
-    g.db.execute(
-        "INSERT INTO todos (user_id, description) VALUES ('%s', '%s')"
-        % (session['user']['id'], request.form.get('description', ''))
-    )
-    g.db.commit()
+    user = User.query.filter_by(username=current_user.username).first()
+    todo = Todo(description=desc,user_id=user.id)
+    db.session.add(todo)
+    db.session.commit()
+
     flash('Todo has been successfully added')
 
     return redirect('/todo')
 
-
 @app.route('/todo/<id>', methods=['POST'])
+@login_required
 def todo_delete(id):
-    if not session.get('logged_in'):
-        return redirect('/login')
-    g.db.execute("DELETE FROM todos WHERE id ='%s'" % id)
-    g.db.commit()
+
+    todo = Todo.query.get(id)
+    db.session.delete(todo)
+    db.session.commit()
+
     flash('Todo has been successfully deleted')
 
     return redirect('/todo')
